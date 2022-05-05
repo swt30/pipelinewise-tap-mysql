@@ -278,7 +278,7 @@ def schema_for_column(column):  # pylint: disable=too-many-branches
     elif data_type in JSON_TYPES:
         result.type = ['null', 'object']
 
-    elif data_type in UUID_TYPES or column_type == 'varchar(36)':
+    elif data_type in UUID_TYPES:
         result.type = ['null', 'string']
         result.format = 'uuid'
 
