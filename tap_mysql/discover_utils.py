@@ -37,6 +37,10 @@ STRING_TYPES = {
     'varchar'
 }
 
+UUID_TYPES = {
+    'uuid'
+}
+
 BYTES_FOR_INTEGER_TYPE = {
     'tinyint': 1,
     'smallint': 2,
@@ -62,6 +66,7 @@ SPATIAL_TYPES = {'geometry', 'point', 'linestring',
 # A set of all supported column types listed above
 SUPPORTED_COLUMN_TYPES_AGGREGATED = \
     STRING_TYPES \
+        .union(UUID_TYPES) \
         .union(FLOAT_TYPES) \
         .union(DATETIME_TYPES) \
         .union(BINARY_TYPES) \
@@ -272,6 +277,10 @@ def schema_for_column(column):  # pylint: disable=too-many-branches
 
     elif data_type in JSON_TYPES:
         result.type = ['null', 'object']
+
+    elif data_type in UUID_TYPES or column_type == 'varchar(36)':
+        result.type = ['null', 'string']
+        result.format = 'uuid'
 
     elif data_type in STRING_TYPES:
         result.type = ['null', 'string']
