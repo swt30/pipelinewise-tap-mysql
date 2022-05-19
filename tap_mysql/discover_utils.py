@@ -41,6 +41,11 @@ UUID_TYPES = {
     'uuid'
 }
 
+UUID_IF_LENGTH_36_TYPES = {
+    'char',
+    'varchar'
+}
+
 BYTES_FOR_INTEGER_TYPE = {
     'tinyint': 1,
     'smallint': 2,
@@ -247,6 +252,7 @@ def schema_for_column(column):  # pylint: disable=too-many-branches
     """Returns the Schema object for the given Column."""
 
     data_type = column.data_type.lower()
+    data_length = column.character_maximum_length
     column_type = column.column_type.lower()
 
     inclusion = 'available'
@@ -279,6 +285,10 @@ def schema_for_column(column):  # pylint: disable=too-many-branches
         result.type = ['null', 'object']
 
     elif data_type in UUID_TYPES:
+        result.type = ['null', 'string']
+        result.format = 'uuid'
+
+    elif data_type in UUID_IF_LENGTH_36_TYPES and data_length == 36:
         result.type = ['null', 'string']
         result.format = 'uuid'
 
