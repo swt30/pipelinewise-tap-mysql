@@ -254,6 +254,9 @@ def schema_for_column(column):  # pylint: disable=too-many-branches
     data_type = column.data_type.lower()
     data_length = column.character_maximum_length
     column_type = column.column_type.lower()
+    schema = column.table_schema
+    table = column.table_name
+    colname = column.column_name
 
     inclusion = 'available'
     # We want to automatically include all primary key columns
@@ -262,7 +265,14 @@ def schema_for_column(column):  # pylint: disable=too-many-branches
 
     result = Schema(inclusion=inclusion)
 
-    if data_type in BOOL_TYPES or column_type.startswith('tinyint(1)'):
+    # Manual overrides for type go here, until we have this passed in config
+    if (schema == 'accounts'
+        and table == 'subscriptions'
+        and colname == 'payment_provider_subscription_id'):
+        result.type = ['null', 'string']
+        result.maxLength = data_length
+
+    elif data_type in BOOL_TYPES or column_type.startswith('tinyint(1)'):
         result.type = ['null', 'boolean']
 
     elif data_type in BYTES_FOR_INTEGER_TYPE:
@@ -294,7 +304,7 @@ def schema_for_column(column):  # pylint: disable=too-many-branches
 
     elif data_type in STRING_TYPES:
         result.type = ['null', 'string']
-        result.maxLength = column.character_maximum_length
+        result.maxLength = data_length
 
     elif data_type in DATETIME_TYPES:
         result.type = ['null', 'string']
