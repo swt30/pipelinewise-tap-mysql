@@ -373,8 +373,11 @@ def resolve_catalog(discovered_catalog, streams_to_sync):
         selected = {k for k, v in catalog_entry.schema.properties.items()
                     if common.property_is_selected(catalog_entry, k) or k == replication_key}
 
-        # These are the columns we need to select
-        columns = desired_columns(selected, discovered_table.schema)
+        # These are the columns we need to select. We preserve column ordering
+        # from the tap.
+        source_columns = list(catalog_entry.schema.properties.keys())
+        columns = [c for c in source_columns
+                   if c in desired_columns(selected, discovered_table.schema)]
 
         result.streams.append(CatalogEntry(
             tap_stream_id=catalog_entry.tap_stream_id,
