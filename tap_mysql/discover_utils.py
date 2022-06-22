@@ -266,13 +266,24 @@ def schema_for_column(column):  # pylint: disable=too-many-branches
     result = Schema(inclusion=inclusion)
 
     # Manual overrides for type go here, until we have this passed in config
-    if (schema == 'accounts'
-        and table == 'subscriptions'
-        and colname == 'payment_provider_subscription_id'):
-        result.type = ['null', 'string']
-        result.maxLength = data_length
+    if schema == 'accounts':
+        if table == 'subscriptions' and colname == 'payment_provider_subscription_id':
+            result.type = ['null', 'string']  # overriding UUID
+            result.maxLength = data_length
+            return result
 
-    elif data_type in BOOL_TYPES or column_type.startswith('tinyint(1)'):
+    if schema == 'cassidy':
+        if table == 'trials' and colname == 'id':
+            result.type = 'string'  # overriding UUID
+            result.maxLength = data_length
+            return result
+        elif colname in {'trial_id', 'outcome_id', 'variation_id'}:
+            result.type = 'string'  # overriding UUID
+            result.maxLength = data_length
+            return result
+
+    # Generic type mappings
+    if data_type in BOOL_TYPES or column_type.startswith('tinyint(1)'):
         result.type = ['null', 'boolean']
 
     elif data_type in BYTES_FOR_INTEGER_TYPE:
