@@ -338,27 +338,17 @@ def create_column_metadata(cols: List[Column]):
 
 
 def column_schema(column: str, discovered_table, catalog_metadata):
-    """Get the schema for a column, overriding the discovered type with the
-    metadata-specified type if appropriate."""
+    """Get the schema for a column, overriding the discovered format with the
+    metadata-specified format if appropriate."""
     schema = discovered_table.schema.properties[column]
-    override = catalog_metadata.get(('properties', column), None).get('type', None)
+    format = catalog_metadata.get(('properties', column), None).get('format', 'no-format-override')
 
-    if override is None:
-        return schema
-
-    if override == 'text':
-        schema.type = ['null', 'string']
-        schema.format = None
-    elif override == 'uuid':
-        schema.type = ['null', 'string']
-        schema.format = 'uuid'
-    else:
-        LOGGER.warning(
-            "Column %s has unknown type override `%s`. Using the discovered type instead.",
-            column, override
-        )
+    if format != 'no-format-override':
+        LOGGER.info("Using format `%s` for column %s", format, column)
+        schema.format = format
 
     return schema
+
 
 def resolve_catalog(discovered_catalog, streams_to_sync):
     result = Catalog(streams=[])
