@@ -41,11 +41,6 @@ UUID_TYPES = {
     'uuid'
 }
 
-UUID_IF_LENGTH_36_TYPES = {
-    'char',
-    'varchar'
-}
-
 BYTES_FOR_INTEGER_TYPE = {
     'tinyint': 1,
     'smallint': 2,
@@ -265,24 +260,6 @@ def schema_for_column(column):  # pylint: disable=too-many-branches
 
     result = Schema(inclusion=inclusion)
 
-    # Manual overrides for type go here, until we have this passed in config
-    if schema == 'accounts':
-        if table == 'subscriptions' and colname == 'payment_provider_subscription_id':
-            result.type = ['null', 'string']  # overriding UUID
-            result.maxLength = data_length
-            return result
-
-    if schema == 'cassidy':
-        if table == 'trials' and colname == 'id':
-            result.type = 'string'  # overriding UUID
-            result.maxLength = data_length
-            return result
-        elif colname in {'trial_id', 'outcome_id', 'variation_id'}:
-            result.type = 'string'  # overriding UUID
-            result.maxLength = data_length
-            return result
-
-    # Generic type mappings
     if data_type in BOOL_TYPES or column_type.startswith('tinyint(1)'):
         result.type = ['null', 'boolean']
 
@@ -306,10 +283,6 @@ def schema_for_column(column):  # pylint: disable=too-many-branches
         result.type = ['null', 'object']
 
     elif data_type in UUID_TYPES:
-        result.type = ['null', 'string']
-        result.format = 'uuid'
-
-    elif data_type in UUID_IF_LENGTH_36_TYPES and data_length == 36:
         result.type = ['null', 'string']
         result.format = 'uuid'
 
@@ -364,6 +337,29 @@ def create_column_metadata(cols: List[Column]):
     return metadata.to_list(mdata)
 
 
+def column_schema(column: str, discovered_table, catalog_metadata):
+    """Get the schema for a column, overriding the discovered type with the
+    metadata-specified type if appropriate."""
+    schema = discovered_table.schema.properties[column]
+    override = catalog_metadata.get(('properties', column), None).get('type', None)
+
+    if override is None:
+        return schema
+
+    if override == 'text':
+        schema.type = ['null', 'string']
+        schema.format = None
+    elif override == 'uuid':
+        schema.type = ['null', 'string']
+        schema.format = 'uuid'
+    else:
+        LOGGER.warning(
+            "Column %s has unknown type override `%s`. Using the discovered type instead.",
+            column, override
+        )
+
+    return schema
+
 def resolve_catalog(discovered_catalog, streams_to_sync):
     result = Catalog(streams=[])
 
@@ -390,17 +386,20 @@ def resolve_catalog(discovered_catalog, streams_to_sync):
         columns = [c for c in source_columns
                    if c in desired_columns(selected, discovered_table.schema)]
 
-        result.streams.append(CatalogEntry(
+        schema_properties = {
+            col: column_schema(col, discovered_table, catalog_metadata)
+            for col in columns
+        }
+
+        entry = CatalogEntry(
             tap_stream_id=catalog_entry.tap_stream_id,
             metadata=catalog_entry.metadata,
             stream=catalog_entry.tap_stream_id,
             table=catalog_entry.table,
-            schema=Schema(
-                type='object',
-                properties={col: discovered_table.schema.properties[col]
-                            for col in columns}
-            )
-        ))
+            schema=Schema(type='object', properties=schema_properties)
+        )
+
+        result.streams.append(entry)
 
     return result
 
