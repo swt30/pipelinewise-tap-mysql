@@ -344,7 +344,7 @@ def column_schema(column: str, discovered_table, catalog_metadata):
     format = catalog_metadata.get(('properties', column), None).get('format', 'no-format-override')
 
     if format != 'no-format-override':
-        LOGGER.info("Using format `%s` for column %s", format, column)
+        LOGGER.info("Using format `%s` for column %s due to metadata override", format, column)
         schema.format = format
 
     return schema
