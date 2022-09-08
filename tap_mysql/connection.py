@@ -18,9 +18,11 @@ MARIADB_ENGINE = 'mariadb'
 MYSQL_ENGINE = 'mysql'
 
 DEFAULT_SESSION_SQLS = ['SET @@session.time_zone="+0:00"',
+                        # 8 hour timeouts
                         'SET @@session.wait_timeout=28800',
-                        'SET @@session.net_read_timeout=3600',
-                        'SET @@session.innodb_lock_wait_timeout=3600']
+                        'SET @@session.net_read_timeout=28800',
+                        'SET @@session.net_read_timeout=28800',
+                        'SET @@session.innodb_lock_wait_timeout=28800']
 
 
 @backoff.on_exception(backoff.expo,
